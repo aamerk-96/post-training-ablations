@@ -1,0 +1,5 @@
+export VLLM_USE_V2_MODEL_RUNNER=0
+export VLLM_USE_FLASHINFER_SAMPLER=0
+export VLLM_ATTENTION_BACKEND=TRITON_ATTN
+export UNSLOTH_VLLM_STANDBY=1
+source ~/smol_llm/.venv-rl/bin/activate
