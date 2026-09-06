@@ -1,6 +1,14 @@
 .venv-*/
 __pycache__/
+unsloth_compiled_cache/
+.cache/
 data/
 runs/
+outputs/
+wandb/
+trackio*/
 *.gguf
+*.safetensors
+*.bin
+*.pt
 dwin
