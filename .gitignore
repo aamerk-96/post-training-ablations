@@ -1,9 +1,10 @@
 .venv-*/
 __pycache__/
+.ipynb_checkpoints/
 unsloth_compiled_cache/
 .cache/
-data/
 runs/
+logs/
 outputs/
 wandb/
 trackio*/
@@ -12,3 +13,11 @@ trackio*/
 *.bin
 *.pt
 dwin
+
+# generated data artifacts (large, reproducible via data/stage00 scripts) —
+# keep the scripts and the frozen eval set, drop the bulk corpora/drafts
+data/stage00/*.jsonl
+!data/stage00/eval_gold.jsonl
+!data/stage00/eval_blind.jsonl
+data/stage00/logs/
+data/stage00/diagnostics/
