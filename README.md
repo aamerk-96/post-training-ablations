@@ -92,6 +92,29 @@ After CPT the 360M model reaches 1.580 bits per character on the domain against
 Qwen3-4B-Instruct's 1.573, a model roughly ten times larger. On a corpus this
 narrow, scale confers little advantage.
 
+CPT alone does not transfer to the extraction task — it isn't trained on the
+output format, and its field F1 actually drops below Run 0 (0.043 vs. 0.157).
+Domain fluency and task performance are separate things at this model size, and
+Stage 02 is what closes the gap.
+
+### Stage 02 — supervised fine-tuning
+
+LoRA (r=64, alpha 16, lr 2e-4) over the SFT pool, 2 epochs, effective batch 16,
+run from both the base model and the CPT checkpoint, scored on the same harness.
+
+| Model | field F1 (strict) | field recall | JSON parse | schema complete |
+|---|---|---|---|---|
+| Base model (Run 0) | 0.157 ± 0.019 | 0.332 | 0.510 | 0.510 |
+| SFT from base | 0.725 ± 0.020 | 0.758 ± 0.022 | 0.980 ± 0.014 | 0.980 ± 0.014 |
+| **SFT from CPT** | **0.754 ± 0.020** | **0.810 ± 0.018** | 0.980 ± 0.014 | 0.980 ± 0.014 |
+
+SFT is the stage that fixes format compliance (JSON parse rate 0.51 → 0.98),
+as expected from Run 0's failure mode. Starting SFT from the CPT checkpoint
+rather than the base model gives a further, consistent lift on every metric.
+Full numbers, decoding-variant breakdowns, training cost and a RoPE
+misconfiguration bug that invalidated an earlier round of runs are in
+[`RUNS.md`](RUNS.md).
+
 ### Environments
 
 Each stage runs in its own virtual environment — `env-eval.sh`, `env-sft.sh`,
@@ -103,13 +126,10 @@ sampler explicitly; the defaults are unstable on this hardware.
 
 ## Ongoing
 
-The remaining stages are designed and configured but not yet run. Each is scored
-on the same harness and logged to `RUNS.md` with its config, wall-clock time and
-peak VRAM.
+Stages 01 and 02 are done and scored above. The remaining stages are designed
+and configured but not yet run. Each is scored on the same harness and logged
+to `RUNS.md` with its config, wall-clock time and peak VRAM.
 
-- **Stage 02 — supervised fine-tuning.** Teaches the output format directly.
-  Given the base model's 0.510 JSON parse rate, this is the stage most likely to
-  produce the largest single jump.
 - **Stage 03 — preference optimisation (DPO).** Trained on pairs drawn from the
   fine-tuned model's own outputs, targeting the errors SFT leaves behind.
 - **Stage 04 — RL with verifiable rewards (GRPO).** The extraction task has a
@@ -121,8 +141,10 @@ peak VRAM.
 
 ```
 configs/         per-stage run configuration
-data/stage00/    held-out evaluation set and baselines
+data/stage00/    held-out evaluation set, baselines, dataset-build scripts
 cpt.ipynb        Stage 01 continued pretraining
+sft.ipynb        Stage 02 supervised fine-tuning (LoRA)
+fp32.ipynb       merges an fp32 copy of the SFT-from-base adapter
 env-*.sh         per-stage environment activation
 RUNS.md          run log: stage, config, score, wall-clock, peak VRAM
 ```
