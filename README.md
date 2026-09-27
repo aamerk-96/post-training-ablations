@@ -115,6 +115,59 @@ Full numbers, decoding-variant breakdowns, training cost and a RoPE
 misconfiguration bug that invalidated an earlier round of runs are in
 [`RUNS.md`](RUNS.md).
 
+### Before / after: one held-out example
+
+Same held-out trial description (`NCT06358482`), greedy decoding, run through
+the untouched base model and the final CPT + SFT checkpoint.
+
+> Electric Toothbrush Efficacy in Preventing Dental Plaque Development
+>
+> The present study will be the first to compared dental plaque quantitation
+> between an oscillating-rotating electric toothbrush and a manual toothbrush
+> with a new QLF technology. This is a randomized controlled trial of 12-weeks
+> duration designed to assess whether a new commercially available
+> oscillating-rotating electric toothbrush can objectively improve dental
+> plaque parameters obtained via light induced fluorescence (QLF) technology.
+> The study will be conducted in a dental clinic in Italy.
+
+**Base model (Run 0)** — never terminates the object, hallucinates a disease and
+an intervention that appear nowhere in the text, and then loops on the same
+malformed shape until the token budget runs out:
+
+```json
+{
+  "conditions": [
+    "DISEASE": "DENTAL PLASMA",
+    "INTERVENTION": "ELECTROCUTING",
+    "INTERVENTION_TYPES": ["ELECTROCUTING"],
+    "ALLOCATION": "NON_RANDOMIZED"
+  ],
+  "interventions": [ ... ],
+  "allocation": "NON_RANDOMIZED"
+}
+
+JSON:
+{
+  "conditions": [
+    "DISEASE": "DENTAL PLASMA",
+    ...
+  # repeats verbatim until generation is cut off
+```
+
+**CPT + SFT (`sft_cpt_rope`)** — well-formed, on-schema, and matches the study:
+
+```json
+{"conditions": ["dental plaque development"], "interventions": ["oscillating-rotating electric toothbrush", "manual toothbrush with a new QLF technology"], "intervention_types": ["DEVICE"], "allocation": "RANDOMIZED"}
+```
+
+**Gold:**
+
+```json
+{"conditions": ["dental plaque"], "interventions": ["oscillating-rotating electric toothbrush", "manual toothbrush"], "intervention_types": ["DEVICE"], "allocation": "RANDOMIZED"}
+```
+
+Full sample logs: `data/stage00/logs/` (base) and `logs/sft_cpt_rope/` (final).
+
 ### Environments
 
 Each stage runs in its own virtual environment — `env-eval.sh`, `env-sft.sh`,
